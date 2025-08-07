@@ -1,31 +1,22 @@
-from telegram.ext import Updater, MessageHandler, Filters
+import os
+from telegram.ext import Application, MessageHandler, ContextTypes, CommandHandler, filters
+from telegram import Update
 from utils.drive import guardar_pdf_en_drive
 from utils.sheet import registrar_datos_en_sheet
 from utils.calendar import crear_evento_desde_sheet
 from utils.pdf_parser import extraer_datos_pdf
 
-import os
-
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
+WEBHOOK_URL = os.environ["WEBHOOK_URL"]  # Ej: https://bot-cloud-abc123.a.run.app/webhook
 
-def manejar_documento(update, context):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot activo. Enviame un PDF.")
+
+async def manejar_documento(update: Update, context: ContextTypes.DEFAULT_TYPE):
     archivo = update.message.document
     if archivo.mime_type == "application/pdf":
-        archivo_pdf = archivo.get_file().download()
+        archivo_file = await archivo.get_file()
+        archivo_pdf = await archivo_file.download_to_drive()
         datos_extraidos = extraer_datos_pdf(archivo_pdf)
         ruta_en_drive = guardar_pdf_en_drive(archivo_pdf, archivo.file_name)
-        registrar_datos_en_sheet(datos_extraidos, archivo.file_name, ruta_en_drive)
 
-def main():
-    updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
-
-    handler = MessageHandler(Filters.document.mime_type("application/pdf"), manejar_documento)
-    dispatcher.add_handler(handler)
-
-    print("Bot iniciado. Esperando PDFs...")
-    updater.start_polling()
-    updater.idle()
-
-if __name__ == "__main__":
-    main()
