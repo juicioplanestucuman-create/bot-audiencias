@@ -43,6 +43,8 @@ if __name__ == "__main__":
         return web.Response(text="OK")
 
     async def on_startup(app):
+        await application.initialize()
+        await application.start()
         await application.bot.set_webhook(WEBHOOK_URL)
 
     app = web.Application()
@@ -51,3 +53,4 @@ if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 8080))
     web.run_app(app, port=port)
+
